@@ -1,0 +1,84 @@
+---
+title: "Practical Machine Learning "
+output: html_document
+author: Sumeet Kumar  S Mulay 
+date: 19/10/2020
+---
+
+```{r}
+if(!file.exists("pml-training.csv"))
+{
+  download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", "pml-training.csv", method = 'curl')
+}
+dataset <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+if(!file.exists("pml-testing.csv"))
+{
+  download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", "pml-testing.csv", method = 'curl')
+}
+val <- read.csv("pml-testing.csv")
+```
+
+## Importing Libraries 
+
+```{r}
+library(caret)
+library(randomForest)
+```
+## Setting Seed 
+
+```{r}
+set.seed(100)
+```
+
+#Dividing the data into 70/30 training and testing sets 
+
+```{r}
+inTrain = createDataPartition(y=dataset$classe, p=0.7, list=FALSE)
+train = dataset[inTrain,]
+test = dataset[-inTrain,]
+```
+#Removing Null values 
+
+```{r}
+NullCols = sapply(train, function(x) {sum(is.na(x))}) 
+NullCols
+colsWithNull = names(NullCols[NullCols > 0])
+train = train[, !names(train) %in% colsWithNull] 
+names(train)
+train <- train[, !names(train) %in% c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "new_window", "num_window")]
+```
+## Creating a Validation set 
+```{r}
+NullCols = sapply(val, function(x) {sum(is.na(x))})
+colsWithNull = names(NullCols[NullCols > 0])
+val= val[, !names(val) %in% colsWithNull]
+val <- val[, !names(val) %in% c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "new_window", "num_window")]
+```
+
+## Creating a testing set 
+```{r}
+NullCols = sapply(test, function(x) {sum(is.na(x))})
+colsWithNull = names(NullCols[NullCols > 0])
+test = test[, !names(test) %in% colsWithNull]
+test <- test[, !names(test) %in% c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp", "new_window", "num_window")]
+```
+
+## Creating model using Decision tree 
+```{r}
+#modFitDT <- rpart(classe ~ ., data = train, method = "class")
+#predictDT <- predict(modFitDT, test, type = "class")
+#rpart.plot(modFitDT, main="Classification Tree", extra=102, under=TRUE, faclen=0, cex = 0.55)
+#confusionMatrix(factor(predictDT), factor(test$classe))
+```
+
+
+## Creating model using RandomForest 
+```{r}
+model <- randomForest(as.factor(classe) ~ .,   data=train, ntree = 100)
+pred <- predict(model, test)
+confusionMatrix(factor(pred), factor(test$classe))
+modelAcc <- confusionMatrix(factor(pred), factor(test$classe))$overall[[1]]
+```
+#Conclusion 
+
+#We can conclude by saying that RandomForest is more accurate then decision tree. hence for this dataset we choose RandomForest 
